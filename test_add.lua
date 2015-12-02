@@ -48,7 +48,7 @@ function testAddLongDelimeter()
 end
 
 function testAddManyDelimeters()
-	luaunit.assertEquals(calc.add("//[;][+]\n5;15+5"), 25)
+	luaunit.assertEquals(calc.add("//[;][++]\n5;15+5"), 25)
 end
 
 os.exit( luaunit.LuaUnit.run() )

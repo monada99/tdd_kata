@@ -3,24 +3,17 @@ local calc = {}
 
 function checkNegative(str)
 	
-	local negativeNumbers = ""
-	local wereNegatives = false
-	
-	for number in string.gmatch(str,"-%d+") do
-		
-		print ("NUMBER " .. number)
-		wereNegatives = true
-		negativeNumbers = negativeNumbers .. number .. " "
+    for number in string.gmatch(str,"-%d+") do
+		return true
 	end
-	
-	if wereNegatives then
-		error("negative is not allowed : " .. negativeNumbers)
-	end
+	return false
 end
 
-function addStringSeparatedComma(str)
+function addStringSeparatedDefaultDelimeter(str)
 
-	checkNegative(str)
+	if checkNegative(str) == true then
+        return nil
+    end
 	
 	local result = 0
 	
@@ -33,12 +26,59 @@ function addStringSeparatedComma(str)
 	return result
 end
 
-function checkCorrectnessDelimeter(str, delimeter)
-
-	if string.match(str, "[^" .. delimeter .. "^0-9]") ~= nil then
-		return false
-	end
+function checkCorrectnessString(string, expectedDelimeter)
+    
+    for currentDelimeter in string.gmatch(string, "[^0-9]+") do
+       
+        if currentDelimeter ~= expectedDelimeter then
+            return false
+        end
+    end
 	return true
+end
+
+function returnCustomDelimeters()
+    
+    customDelimeters = {}
+    customDelimeters[1] = ','
+    customDelimeters[2] = '\n'
+
+    return customDelimeters
+
+end
+
+function pullDelimetersAndString(str)
+
+    result = string.match(str, "//(.+)\n.+")
+
+	pair = {} 
+
+    if result == nil then
+        pair.string = str
+        pair.delimeters = returnCustomDelimeters()
+    else
+       
+        pair.string = string.match(str, "//.+\n(.+)")
+
+        del = string.match(result, "%b[]")
+        
+        delimeters = {}
+
+        if del == nil then 
+            delimeters[1] = result
+        else
+            
+            while del ~= nil do
+                delimeter = string.match(del, "%[(.+)%]")
+                table.insert(delimeters, delimeter)
+                result = string.sub(result, del:len())
+                del = string.match( result, "%b[]")
+            end
+        end
+
+        pair.delimeters = delimeters
+    end
+    return pair
 end
 
 function calc.add(str)
@@ -50,28 +90,24 @@ function calc.add(str)
 	if str:len() == 0 then
 		return 0
 	end
-	
-	iter = string.gmatch(str, "//(.+)\n(.+)")
-	
-	delimeter, str2 = iter();
-	
-	if delimeter ~= nil and str2 ~= nil then
-		
-		defaultDelimeter = ","
-		
-		str2 = string.gsub(str2, delimeter, defaultDelimeter)
-		
-		if checkCorrectnessDelimeter(str2, defaultDelimeter) == false then
-			return nil
-		end
-		
-		return addStringSeparatedComma(str2)
-	else
-		return addStringSeparatedComma(str)
-	end 
-	
+
+	pair = pullDelimetersAndString(str)
+    
+    defaultDelimeters = returnCustomDelimeters()
+    
+    string = pair.string
+    if pair.delimeters ~= defaultDelimeters then
+        
+        for k, delimeter in pairs(pair.delimeters) do
+            string = string.gsub(string, delimeter, defaultDelimeters[1])
+        end
+        
+        if checkCorrectnessString(string, defaultDelimeters[1]) == false then
+            return nil
+        end
+    end
+    
+    return addStringSeparatedDefaultDelimeter(string)
 end
 
 return calc;
-
-

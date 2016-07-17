@@ -1,113 +1,107 @@
-
 local calc = {}
 
-function checkNegative(str)
-	
-    for number in string.gmatch(str,"-%d+") do
-		return true
-	end
-	return false
+local string_find = string.find
+local string_gmatch = string.gmatch
+local string_match = string.match
+
+function checkNegative( str )
+    for number in string_gmatch( str, "-%d+" ) do
+        return true
+    end
+    return false
 end
 
-function addStringSeparatedDefaultDelimeter(str)
-
-	if checkNegative(str) == true then
+function addStringSeparated( str )
+    if checkNegative( str ) then
         return nil
     end
-	
-	local result = 0
-	
-	for number in string.gmatch(str,"%d+") do
-		if tonumber(number) <= 1000 then
-			result = result + number
-		end
-	end
-	
-	return result
+
+    local result = 0
+    local threshold = 1000
+
+    for number in string_gmatch( str, "%d+" ) do
+        if tonumber(number) <= threshold then
+            result = result + number
+        end
+    end
+
+    return result
 end
 
-function checkCorrectnessString(string, expectedDelimeter)
-    
-    for currentDelimeter in string.gmatch(string, "[^0-9]+") do
-       
+local function checkCorrectnessString( string, expectedDelimeter )
+    for currentDelimeter in string_gmatch( string, "[^0-9]+" ) do
         if currentDelimeter ~= expectedDelimeter then
             return false
         end
     end
-	return true
+
+    return true
 end
 
-function returnCustomDelimeters()
-    
-    customDelimeters = {}
-    customDelimeters[1] = ','
-    customDelimeters[2] = '\n'
-
+local function returnCustomDelimeters()
+    local customDelimeters = { ',', '\n' }
     return customDelimeters
-
 end
 
-function pullDelimetersAndString(str)
+local function pullDelimetersAndString( str )
+    local delimeters, numbers = string_match( str, "//(.+)\n(.+)" )
+    local pair = {}
 
-    result = string.match(str, "//(.+)\n.+")
-
-	pair = {} 
-
-    if result == nil then
+    if delimeters == nil then
         pair.string = str
         pair.delimeters = returnCustomDelimeters()
     else
-       
-        pair.string = string.match(str, "//.+\n(.+)")
+        pair.string = numbers
 
-        del = string.match(result, "%b[]")
-        
-        delimeters = {}
+        local del = string_match( delimeters, "%b[]" )
 
-        if del == nil then 
-            delimeters[1] = result
+        local outputDelimeters = {}
+
+        if del == nil then
+            outputDelimeters[1] = delimeters
         else
-            
             while del ~= nil do
-                delimeter = string.match(del, "%[(.+)%]")
-                table.insert(delimeters, delimeter)
-                result = string.sub(result, del:len())
-                del = string.match( result, "%b[]")
+                local delimeter = string_match( del, "%[(.+)%]" )
+                table.insert( outputDelimeters, delimeter )
+                delimeters = string.sub( delimeters, del:len() )
+                del = string_match( delimeters, "%b[]")
             end
         end
 
-        pair.delimeters = delimeters
+        pair.delimeters = outputDelimeters
     end
     return pair
 end
 
-function calc.add(str)
+local function replaceDelimetersOnSymbolInString( pair, symbol )
+    local string = pair.string
 
-	if str == nil then 
-		return 0
-	end
-	
-	if str:len() == 0 then
-		return 0
-	end
-
-	pair = pullDelimetersAndString(str)
-    
-    defaultDelimeters = returnCustomDelimeters()
-    
-    string = pair.string
-    if pair.delimeters ~= defaultDelimeters then
-        
-        for k, delimeter in pairs(pair.delimeters) do
-            string = string.gsub(string, delimeter, defaultDelimeters[1])
-        end
-        
-        if checkCorrectnessString(string, defaultDelimeters[1]) == false then
-            return nil
-        end
+    for index = 1, #pair.delimeters do
+        local delimeter = pair.delimeters[ index ]
+        string = string.gsub( string, delimeter, symbol )
     end
-    
-    return addStringSeparatedDefaultDelimeter(string)
+    return string
 end
 
-return calc;
+function calc.add( str )
+    if not str then
+        return 0
+    end
+
+    if str:len() == 0 then
+        return 0
+    end
+
+    local pair = pullDelimetersAndString(str)
+    local separator = ','
+
+    local newString = replaceDelimetersOnSymbolInString( pair, separator )
+
+    if checkCorrectnessString( newString, separator ) == false then
+        return nil
+    end
+
+    return addStringSeparated( newString, separator )
+end
+
+return calc
